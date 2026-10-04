@@ -84,7 +84,11 @@ def configured_runs(config: VTuneConfig) -> tuple[Mapping[str, object], ...]:
 
 
 def _validate_run(engine: str, run: Mapping[str, object], index: int, name: str) -> None:
-    allowed = {"name", "request_format", "profile", "constraints", "data"} if engine == "guidellm" else {"name", "args"}
+    allowed = (
+        {"name", "request_format", "temperature", "profile", "constraints", "data"}
+        if engine == "guidellm"
+        else {"name", "args"}
+    )
     if unknown := set(run) - allowed:
         raise ValueError(f"Unsupported setting(s) in benchmark run {index}: {', '.join(sorted(unknown))}")
     if engine == "guidellm":

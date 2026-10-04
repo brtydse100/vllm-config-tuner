@@ -108,6 +108,14 @@ Without `analysis.finalist_validation`, when a finalist's sequential repeat mean
 the recommendation is finalized. Their validation artifacts are kept under
 `validation-001`; a failed validation removes that candidate from the ranking.
 
+Drift compares the first and second halves of at least four repeats within the
+same trial and workload. Different tuned configurations are expected to perform
+differently, and repeated timings need not be identical even with temperature
+`0`. The drift column labels changes within the configured threshold separately
+from detected drift. Conclusive comparisons use normal styling; inconclusive
+evidence retains a warning. A threshold of `0` flags any change and is intended
+for demonstrations such as the archived report showcase, not normal use.
+
 With [fixed-budget finalist validation](benchmarks/benchmark-repeats.md#fresh-finalist-validation),
 the baseline and selected candidates receive fresh measurements even without
 detected drift. Artifacts live under `finalist-validation`. The overview and

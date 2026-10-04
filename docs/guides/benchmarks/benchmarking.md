@@ -4,6 +4,11 @@ Set `benchmark.engine` to `guidellm` (the default) or `vllm`. Each run invokes
 the selected engine against the same vLLM trial. vLLM Optimizer saves raw
 JSON and `benchmark.log`, then normalizes the result for scoring and reporting.
 
+Generation benchmarks default to `temperature: 0`. Explicit nonzero temperatures
+are preserved and produce a startup warning for each affected named run. Zero
+temperature uses greedy sampling to reduce output variation; timing measurements can still vary.
+Use `args.temperature` for vLLM or a run-level `temperature` for GuideLLM.
+
 Use `benchmark.warmup_repeats` for discarded benchmark executions. Each named
 benchmark receives these warmups once per trial attempt, before measured repeats. Set `benchmark.repeats` to at least `benchmark.min_repeats`
 for a ranking with the configured confidence policy. Warmups default to zero;
@@ -60,9 +65,19 @@ is also valid and is labeled exploratory in reports.
 The `vllm-opt` CLI automatically uses `--backend vllm` and also owns `model`, `host`,
 `port`, `base-url`, `save-result`, `append-result`, `result-dir`, and
 `result-filename`; do not put them under `args`. Underscores
-and hyphens are both accepted in keys. `true` adds a flag and `false` omits it.
+and hyphens are both accepted in keys; an optional leading `--` is stripped.
+Duplicate spellings of the same flag are rejected. `true` adds a flag and `false` omits it.
 A list emits one flag followed by every item. Other scalar values are passed as
 strings, so new vLLM options do not require a vLLM Optimizer release.
+
+Temperature must be a finite, non-negative number, including an explicit `0`.
+For example, `args: {temperature: 0}` emits `--temperature 0.0`.
+An `extra-body` JSON string can override the request temperature, following
+vLLM's precedence; startup warnings use that effective value. Invalid
+temperatures or JSON bodies fail configuration validation before execution.
+When a benchmark process exits unsuccessfully, the diagnostic includes the run
+name, exit code, and full `benchmark.log` path, plus available log output.
+Request-completion failures and invalid results also include the log path.
 
 Common dataset forms:
 

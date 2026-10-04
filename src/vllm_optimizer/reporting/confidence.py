@@ -38,6 +38,10 @@ def verdict(baseline: TrialReport | None, best: TrialReport | None, metric: str,
     return "Repeat ranges favor the recommendation in every matched workload; independent validation is still limited."
 
 
+def conclusion_class(conclusion: str) -> str:
+    return "warning" if conclusion.startswith(("Inconclusive:", "No clear winner:")) else "note"
+
+
 def confidence(
     directory: Path,
     baseline: TrialReport | None,
@@ -68,13 +72,16 @@ def confidence(
             except ValueError:
                 historical.append("<tr><td colspan='8'>Initial search evidence unavailable.</td></tr>")
     heading = ("Trial / phase", "Workload", "Individual repeats", "n", "Mean", "Sample SD", "Range", "Drift")
+    message = conclusion or verdict(baseline, best, metric, context)
     return (
-        "<section id='confidence'><h2>Confidence in the result</h2><p class='warning'>"
-        + escape(conclusion or verdict(baseline, best, metric, context))
+        f"<section id='confidence'><h2>Confidence in the result</h2><p class='{conclusion_class(message)}'>"
+        + escape(message)
         + "</p>"
         "<p>Descriptive repeat evidence for the optimization metric, per workload. Range overlap is a conservative "
         "inconclusive flag, not a statistical significance test. These measurements are not independent proof "
-        "of production performance. Drift compares the first and second halves when at least four repeats exist.</p>"
+        "of production performance. Repeated timings need not be identical, even with temperature=0. "
+        "Drift compares the first and second halves of repeats within the same trial and workload when at least "
+        "four repeats exist; performance differences between tuned configurations are not drift.</p>"
         + (
             f"<p>Fixed validation budget: {escape(str(context.finalist_validation.get('repeats')))} fresh repeats per named run "
             "for each selected candidate. Search repeats do not count. A favorable decision requires separation "
@@ -108,7 +115,7 @@ def _rows(report: TrialReport, phase: str, metric: str, context: ReportContext) 
             f"{item.repeat}: {formatted(next(iter(samples([item], (metric,))), None))}" for item in observations
         )
         drift_value = sequential_drift(values)
-        drift = _drift_label(drift_value)
+        drift = _drift_label(drift_value, context.drift_threshold)
         cells = (
             f"{report.trial_id} / {phase}",
             str(key),
@@ -123,7 +130,8 @@ def _rows(report: TrialReport, phase: str, metric: str, context: ReportContext) 
     return rows
 
 
-def _drift_label(value: float | None) -> str:
+def _drift_label(value: float | None, threshold: float) -> str:
     if value is None:
         return "Unavailable (<4 repeats)"
-    return f"{value:+.2%}"
+    status = "Drift detected" if abs(value) > threshold else "Within threshold"
+    return f"{value:+.2%} ({status})"
