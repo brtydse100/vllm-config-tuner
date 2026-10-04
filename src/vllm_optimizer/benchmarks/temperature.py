@@ -50,13 +50,13 @@ def temperature_warnings(config: VTuneConfig) -> tuple[str, ...]:
 
 def _temperature(value: object) -> float:
     if isinstance(value, bool) or not isinstance(value, str | int | float):
-        raise ValueError("benchmark temperature must be a finite, non-negative number")
+        raise ValueError("benchmark temperature must be a finite number in [0, 2]")
     try:
         number = float(value)
     except (ValueError, OverflowError) as error:
-        raise ValueError("benchmark temperature must be a finite, non-negative number") from error
-    if not isfinite(number) or number < 0:
-        raise ValueError("benchmark temperature must be a finite, non-negative number")
+        raise ValueError("benchmark temperature must be a finite number in [0, 2]") from error
+    if not isfinite(number) or not 0 <= number <= 2:
+        raise ValueError("benchmark temperature must be a finite number in [0, 2]")
     return number
 
 

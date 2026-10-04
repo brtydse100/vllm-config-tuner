@@ -70,7 +70,7 @@ Duplicate spellings of the same flag are rejected. `true` adds a flag and `false
 A list emits one flag followed by every item. Other scalar values are passed as
 strings, so new vLLM options do not require a vLLM Optimizer release.
 
-Temperature must be a finite, non-negative number, including an explicit `0`.
+Temperature must be a finite number in `[0, 2]`, including both boundaries.
 For example, `args: {temperature: 0}` emits `--temperature 0.0`.
 An `extra-body` JSON string can override the request temperature, following
 vLLM's precedence; startup warnings use that effective value. Invalid
