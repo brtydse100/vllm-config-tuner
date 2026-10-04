@@ -113,7 +113,10 @@ same trial and workload. Different tuned configurations are expected to perform
 differently, and repeated timings need not be identical even with temperature
 `0`. The drift column labels changes within the configured threshold separately
 from detected drift. Conclusive comparisons use normal styling; inconclusive
-evidence retains a warning. A threshold of `0` flags any change and is intended
+evidence retains a warning. Retained baselines are also checked for too few
+repeats and drift before the report uses normal styling. Drift thresholds must
+be finite and non-negative, including when regenerating stored reports.
+A threshold of `0` flags any change and is intended
 for demonstrations such as the archived report showcase, not normal use.
 
 With [fixed-budget finalist validation](benchmarks/benchmark-repeats.md#fresh-finalist-validation),

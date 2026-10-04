@@ -33,6 +33,9 @@ adds a live completed/total counter; a duration-only GuideLLM run adds an
 elapsed/limit timer. Set `benchmark.max_failure_percentage` to accept a bounded
 percentage of explicit errors or incomplete requests. Their backend-provided
 details are saved separately in `failed_requests.json`.
+vLLM progress uses the same argument spellings as command construction. Its
+`num-warmups` and enabled readiness request are excluded from measured progress;
+`ready-check-timeout-sec` defaults to `0`, so readiness is disabled by default.
 
 ## vLLM Bench Serve
 
@@ -67,6 +70,8 @@ The `vllm-opt` CLI automatically uses `--backend vllm` and also owns `model`, `h
 `result-filename`; do not put them under `args`. Underscores
 and hyphens are both accepted in keys; an optional leading `--` is stripped.
 Duplicate spellings of the same flag are rejected. `true` adds a flag and `false` omits it.
+Inline forms such as `args: {"--temperature=0.7": true}` are supported and use
+the same validation and duplicate checks as separate key/value forms.
 A list emits one flag followed by every item. Other scalar values are passed as
 strings, so new vLLM options do not require a vLLM Optimizer release.
 
@@ -75,6 +80,13 @@ For example, `args: {temperature: 0}` emits `--temperature 0.0`.
 An `extra-body` JSON string can override the request temperature, following
 vLLM's precedence; startup warnings use that effective value. Invalid
 temperatures or JSON bodies fail configuration validation before execution.
+Dotted JSON fields such as `args: {extra-body.temperature: 0.7}` are also
+supported; JSON field names retain their underscores. When dotted fields and
+a whole `extra-body` JSON string are supplied together, the dotted object
+replaces the whole JSON body, matching vLLM's parser precedence.
+Multiple completions, such as `extra-body: '{"n":2}'`, require an explicit
+nonzero temperature in `args.temperature` or the effective request body.
+The default `0` and explicit zero values fail preflight for `n > 1`.
 When a benchmark process exits unsuccessfully, the diagnostic includes the run
 name, exit code, and full `benchmark.log` path, plus available log output.
 Request-completion failures and invalid results also include the log path.

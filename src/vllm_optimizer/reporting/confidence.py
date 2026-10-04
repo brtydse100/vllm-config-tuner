@@ -16,8 +16,7 @@ from vllm_optimizer.reporting.workloads import formatted, samples, scenarios
 def verdict(baseline: TrialReport | None, best: TrialReport | None, metric: str, context: ReportContext) -> str:
     if baseline is None or best is None:
         return "Inconclusive: baseline or candidate evidence is unavailable."
-    if baseline.trial_id == best.trial_id:
-        return "Baseline retained: no tuned configuration beat it under the scoring policy."
+    retained = baseline.trial_id == best.trial_id
     before, after = scenarios(baseline), scenarios(best)
     if not before or before.keys() != after.keys():
         return "Inconclusive: workload coverage differs or is unavailable."
@@ -28,9 +27,13 @@ def verdict(baseline: TrialReport | None, best: TrialReport | None, metric: str,
             return "Inconclusive: too few repeats to assess variability."
         if any(sequentially_drifted(values, context.drift_threshold) for values in (a, b)):
             return "Inconclusive: repeat measurements show drift."
+        if retained:
+            continue
         if max(min(a), min(b)) <= min(max(a), max(b)):
             return "Inconclusive: repeat ranges overlap; the observed difference may be noise."
         regressions += max(b) < min(a)
+    if retained:
+        return "Baseline retained: no tuned configuration beat it under the scoring policy."
     if regressions == len(before):
         return "Repeat ranges favor the baseline in every matched workload; independent validation is still limited."
     if regressions:

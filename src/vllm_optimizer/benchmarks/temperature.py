@@ -1,11 +1,10 @@
 """Generation sampling defaults and startup warnings shared by benchmark adapters."""
 
-import json
 from collections.abc import Mapping
 from math import isfinite
 
 from vllm_optimizer.benchmarks.configuration import configured_engine, configured_runs
-from vllm_optimizer.config.arguments import normalized_arguments
+from vllm_optimizer.benchmarks.vllm_arguments import extra_body, normalized_benchmark_arguments
 from vllm_optimizer.config.models import VTuneConfig
 
 _GENERATION_ROUTES = {"/v1/completions", "/v1/chat/completions", "/v1/responses"}
@@ -20,14 +19,11 @@ def generation_temperature(run: Mapping[str, object]) -> float | None:
 
 
 def vllm_arguments(run: Mapping[str, object]) -> dict[str, object]:
-    raw = run.get("args", {})
-    if not isinstance(raw, Mapping):
-        raise ValueError("vLLM benchmark args must be an object")
-    args = normalized_arguments(raw, "vLLM benchmark arguments")
+    args = normalized_benchmark_arguments(run)
     args["temperature"] = _temperature(args.get("temperature", 0))
-    body = _extra_body(args)
-    if "temperature" in body:
-        _temperature(body["temperature"])
+    body = extra_body(args)
+    effective = _temperature(body.get("temperature", args["temperature"]))
+    _completion_count(body.get("n", 1), effective)
     return args
 
 
@@ -37,7 +33,7 @@ def temperature_warnings(config: VTuneConfig) -> tuple[str, ...]:
         value: float | None
         if configured_engine(config) == "vllm":
             args = vllm_arguments(run)
-            value = _temperature(_extra_body(args).get("temperature", args["temperature"]))
+            value = _temperature(extra_body(args).get("temperature", args["temperature"]))
         else:
             value = generation_temperature(run)
         if value is not None and value != 0:
@@ -60,14 +56,16 @@ def _temperature(value: object) -> float:
     return number
 
 
-def _extra_body(args: Mapping[str, object]) -> Mapping[str, object]:
-    if "extra-body" not in args:
-        return {}
+def _completion_count(value: object, temperature: float) -> None:
+    if value is None:
+        return
+    if isinstance(value, bool) or not isinstance(value, str | int | float):
+        raise ValueError("vLLM benchmark extra-body n must be a positive integer")
     try:
-        value = args["extra-body"]
-        body = json.loads(value) if isinstance(value, str) else None
-    except (ValueError, TypeError) as error:
-        raise ValueError("vLLM benchmark extra-body must be a JSON object string") from error
-    if not isinstance(body, dict):
-        raise ValueError("vLLM benchmark extra-body must be a JSON object string")
-    return body
+        count = float(value)
+    except (ValueError, OverflowError) as error:
+        raise ValueError("vLLM benchmark extra-body n must be a positive integer") from error
+    if not isfinite(count) or not count.is_integer() or count < 1:
+        raise ValueError("vLLM benchmark extra-body n must be a positive integer")
+    if count > 1 and temperature == 0:
+        raise ValueError("vLLM benchmark extra-body n > 1 requires an explicit nonzero temperature")

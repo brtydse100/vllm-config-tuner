@@ -6,6 +6,7 @@ import re
 from collections.abc import Mapping
 
 from vllm_optimizer.benchmarks.timing import parse_duration
+from vllm_optimizer.benchmarks.vllm_arguments import normalized_benchmark_arguments
 
 _SAMPLE = re.compile(
     r"^(?P<name>[^\s{]+)(?:\{(?P<labels>.*)\})?\s+"
@@ -34,9 +35,8 @@ def request_count(text: str, path: str) -> int | None:
 
 def progress_limit(engine: str, run: Mapping[str, object]) -> tuple[str | None, float]:
     if engine == "vllm":
-        args = run.get("args", {})
-        value = args.get("num_prompts", args.get("num-prompts")) if isinstance(args, Mapping) else None
-        return ("requests", float(value)) if isinstance(value, int) and value > 0 else (None, 0)
+        count = _integer(normalized_benchmark_arguments(run).get("num-prompts"))
+        return ("requests", float(count)) if count > 0 else (None, 0)
     constraints = run.get("constraints", [])
     if isinstance(constraints, list):
         for item in constraints:
@@ -55,16 +55,27 @@ def progress_limit(engine: str, run: Mapping[str, object]) -> tuple[str | None, 
 def request_path(engine: str, run: Mapping[str, object]) -> str:
     if engine == "guidellm":
         return str(run.get("request_format", "/v1/completions"))
-    args = run.get("args", {})
-    return str(args.get("endpoint", "/v1/completions")) if isinstance(args, Mapping) else "/v1/completions"
+    return str(normalized_benchmark_arguments(run).get("endpoint", "/v1/completions"))
 
 
 def setup_requests(engine: str, run: Mapping[str, object]) -> int:
-    if engine != "vllm" or not isinstance((args := run.get("args", {})), Mapping):
+    if engine != "vllm":
         return 0
-    warmups = args.get("num_warmups", args.get("num-warmups", 0))
-    initial = int(args.get("ready_check_timeout_sec", args.get("ready-check-timeout-sec", 600)) != 0)
-    return initial + (warmups if isinstance(warmups, int) and warmups > 0 else 0)
+    args = normalized_benchmark_arguments(run)
+    warmups = _integer(args.get("num-warmups", 0))
+    initial = int(_integer(args.get("ready-check-timeout-sec", 0)) > 0)
+    return initial + max(0, warmups)
+
+
+def _integer(value: object) -> int:
+    if isinstance(value, int) and not isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        try:
+            return int(value)
+        except ValueError:
+            pass
+    return 0
 
 
 def _strategy_count(profile: object) -> int:

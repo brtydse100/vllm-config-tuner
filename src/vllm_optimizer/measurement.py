@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
-from math import sqrt
+from math import isfinite, sqrt
 from statistics import fmean, median
 
 _T_95 = (
@@ -91,19 +91,23 @@ def _student_t_critical(degrees: int) -> float:
 
 def drifted(before: float, after: float, threshold: float = 0.05) -> bool:
     """Return true when sequential measurements differ by the relative threshold."""
-    if threshold < 0:
-        raise ValueError("drift threshold must not be negative")
+    validate_drift_threshold(threshold)
     scale = max(abs(before), 1e-12)
     return abs(after - before) / scale > threshold
 
 
 def sequentially_drifted(values: Iterable[float], threshold: float = 0.05) -> bool:
+    validate_drift_threshold(threshold)
     drift = sequential_drift(values)
     if drift is None:
         return False
-    if threshold < 0:
-        raise ValueError("drift threshold must not be negative")
     return abs(drift) > threshold
+
+
+def validate_drift_threshold(value: object) -> float:
+    if isinstance(value, bool) or not isinstance(value, int | float) or not isfinite(value) or value < 0:
+        raise ValueError("drift_threshold must be finite and non-negative")
+    return float(value)
 
 
 def sequential_drift(values: Iterable[float]) -> float | None:
