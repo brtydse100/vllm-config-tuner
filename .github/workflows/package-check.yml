@@ -4,7 +4,7 @@ permissions: {contents: read}
 
 jobs:
   software-gates:
-    name: Python ${{ matrix.python-version }} software gates
+    name: Python ${{ matrix.python-version }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     strategy:
