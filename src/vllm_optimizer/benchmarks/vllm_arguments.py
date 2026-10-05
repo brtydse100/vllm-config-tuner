@@ -46,6 +46,8 @@ def normalized_benchmark_arguments(run: Mapping[str, object]) -> dict[str, objec
                 raise ValueError(f"vLLM benchmark '{name}' requires a scalar or JSON string field value")
             _add_field(dotted_body, field, str(value))
         else:
+            if name == "extra-body" and (value is False or isinstance(value, list) and not value):
+                continue
             arguments[name] = value
     if dotted_body:
         # vLLM appends the dotted object last, replacing a separately supplied JSON body.
