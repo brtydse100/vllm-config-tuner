@@ -3,6 +3,7 @@ from pathlib import Path
 
 from vllm_optimizer.benchmarks.configuration import configured_runs
 from vllm_optimizer.benchmarks.policy import effective_policy
+from vllm_optimizer.benchmarks.temperature import temperature_warnings
 from vllm_optimizer.config.adaptive_repeats import adaptive_repeat_policy
 from vllm_optimizer.config.finalist_validation import finalist_policy
 from vllm_optimizer.config.models import VTuneConfig
@@ -71,6 +72,8 @@ class Orchestrator:
         self._finalizer.start(results, session, run_id, started_at)
         session.persist(results, run_id, self._metric, "running", started_at, None, self._source_run_id, self._sources)
         self._terminal.info(f"Run: {run_id}\nDirectory: {directory.resolve()}")
+        for temperature_warning in temperature_warnings(self._config):
+            self._terminal.warning(f"WARNING: {temperature_warning}")
         if self._retry_trials is None and (warning := search_warning(self._config)):
             self._terminal.warning(f"WARNING: {warning}")
         self._manifest = ManifestWriter(collect_metadata())

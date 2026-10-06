@@ -32,6 +32,7 @@ from vllm_optimizer.config.runtime import (
     server_port,
 )
 from vllm_optimizer.execution.slots import WorkerSlot, worker_slots
+from vllm_optimizer.measurement import validate_drift_threshold
 from vllm_optimizer.reporting.llm_summary import settings as llm_settings
 from vllm_optimizer.search.factory import validate_search
 from vllm_optimizer.search.grid import TrialParameters, definition_values, iter_grid
@@ -79,6 +80,7 @@ def _validate(config: VTuneConfig, selected_trials: Sequence[TrialParameters] | 
     configured_failure_percentage(config)
     configured_warmup_repeats(config)
     adaptive_repeat_policy(config)
+    validate_drift_threshold(config.analysis.get("drift_threshold", 0.05))
     finalist_policy(config)
     maximize_metric(config)
     sampler, trial_count = validate_search(config)

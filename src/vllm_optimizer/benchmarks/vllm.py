@@ -10,6 +10,7 @@ from pathlib import Path
 from urllib.parse import urlsplit
 
 from vllm_optimizer.benchmarks.metrics import normalize_vllm_metrics
+from vllm_optimizer.benchmarks.temperature import vllm_arguments
 from vllm_optimizer.config.models import VTuneConfig
 from vllm_optimizer.config.runtime import model_path
 from vllm_optimizer.domain.benchmark import BenchmarkResult, WorkloadResult
@@ -39,8 +40,7 @@ class VLLMBenchPlan:
 
 def build_plan(config: VTuneConfig, run: Mapping[str, object], endpoint: str, artifacts: Path) -> VLLMBenchPlan:
     name = str(run["name"])
-    args = _mapping(run.get("args", {}), f"vllm benchmark run '{name}' args")
-    normalized = {key.replace("_", "-"): value for key, value in args.items()}
+    normalized = vllm_arguments(run)
     if protected := _RESERVED.intersection(normalized):
         raise ValueError(f"vLLM Optimizer controls vLLM benchmark argument(s): {', '.join(sorted(protected))}")
     parsed = urlsplit(endpoint)

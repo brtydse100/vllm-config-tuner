@@ -13,6 +13,7 @@ benchmark:
     # A run must contain exactly one data item.
     - name: concurrent-chat
       request_format: /v1/chat/completions  # Default: /v1/completions.
+      temperature: 0  # Default for generation; nonzero values warn at startup.
       profile:
         kind: concurrent
         streams: [4, 16, 32]

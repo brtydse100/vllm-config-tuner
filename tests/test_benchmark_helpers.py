@@ -74,7 +74,7 @@ def test_progress_policy_parses_metrics_and_limits() -> None:
     assert progress_limit("guidellm", run) == ("requests", 10.0)
     assert progress_limit("guidellm", {"constraints": [{"kind": "max_duration", "seconds": ["2s"]}]}) == ("time", 2.0)
     assert request_path("guidellm", {"request_format": "/chat"}) == "/chat"
-    assert setup_requests("vllm", {"args": {"num-warmups": 2}}) == 3
+    assert setup_requests("vllm", {"args": {"num-warmups": 2}}) == 2
 
 
 def test_benchmark_state_helpers(tmp_path: Path) -> None:

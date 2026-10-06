@@ -1,8 +1,23 @@
 # GuideLLM benchmark options
 
 
-A GuideLLM run accepts `name`, `request_format`, `profile`, `constraints`, and
+A GuideLLM run accepts `name`, `request_format`, `temperature`, `profile`, `constraints`, and
 exactly one `data` item.
+
+For completions, chat completions, and responses, `temperature` defaults to `0`
+and is sent as `extras.body.temperature` to the GuideLLM backend. Set it on the
+named run to override it:
+
+```yaml
+name: sampled-generation
+temperature: 0.7  # Preserved, with a startup warning recommending 0.
+profile: {kind: synchronous}
+constraints: [{kind: max_requests, count: 100}]
+data: [{kind: synthetic_text, prompt_tokens: 256, output_tokens: 64}]
+```
+
+Non-generation routes, including embeddings and pooling, receive no temperature
+setting. Explicit temperature settings on those routes are rejected.
 
 ## Profiles
 

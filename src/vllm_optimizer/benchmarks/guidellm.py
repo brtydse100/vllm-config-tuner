@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from vllm_optimizer.benchmarks.metrics import normalize_guidellm_metrics
+from vllm_optimizer.benchmarks.temperature import generation_temperature
 from vllm_optimizer.benchmarks.timing import normalize_durations
 from vllm_optimizer.config.models import VTuneConfig
 from vllm_optimizer.config.runtime import model_path
@@ -40,15 +41,21 @@ def build_plan(config: VTuneConfig, run: Mapping[str, object], endpoint: str, ar
     request_format = run.get("request_format", "/v1/completions")
     if not isinstance(request_format, str) or not request_format.strip():
         raise ValueError("benchmark request_format must be a non-empty string")
+    backend: dict[str, object] = {
+        "kind": "openai_http",
+        "target": endpoint,
+        "model": model_path(config),
+        "request_format": request_format,
+    }
+    if (temperature := generation_temperature(run)) is not None:
+        backend["extras"] = {"body": {"temperature": temperature}}
     directory = Path(artifacts) / str(name)
     json_path = directory / "results.json"
     argv = [
         "guidellm",
         "run",
         "--backend",
-        _serialize(
-            {"kind": "openai_http", "target": endpoint, "model": model_path(config), "request_format": request_format}
-        ),
+        _serialize(backend),
         "--profile",
         _serialize(_mapping(run.get("profile"), "profile")),
     ]

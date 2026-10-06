@@ -11,6 +11,7 @@ benchmark:
   runs:
     - name: random-throughput
       args:
+        temperature: 0  # Default; explicitly supported by vLLM 0.30.
         dataset-name: random
         random-input-len: 512
         random-output-len: 128

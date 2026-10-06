@@ -24,7 +24,7 @@ from vllm_optimizer.workers.benchmark_state import (
     worker_name,
 )
 from vllm_optimizer.workers.completion import observed_requests, reported_request_total, request_count_failure
-from vllm_optimizer.workers.failure_details import classified_failure
+from vllm_optimizer.workers.failure_details import classified_failure, log_excerpt
 from vllm_optimizer.workers.process import ManagedProcess, ProcessRunner, ProcessSpec
 from vllm_optimizer.workers.progress import BenchmarkProgress, ProgressCallback
 
@@ -89,7 +89,7 @@ class VLLMBenchmarkWorker:
                 "install runtime tools with: pip install 'vllm-optimizer[runtime]'",
             )
         except Exception as error:
-            return failed("benchmark_launch_failed", str(error))
+            return failed("benchmark_launch_failed", f"vLLM benchmark '{self._run_name}' could not start: {error}")
         context.values[self._ownership_key] = process
         progress.start(process)
         prefix = artifact_prefix(plan.run_name, self._repeat_index, self._warmup_index)
@@ -111,7 +111,11 @@ class VLLMBenchmarkWorker:
             await progress.stop()
         if returncode:
             return WorkerResult.failed(
-                classified_failure(plan.log_path, "benchmark_failed", f"vLLM bench serve exited with code {returncode}")
+                classified_failure(
+                    plan.log_path,
+                    "benchmark_failed",
+                    f"vLLM benchmark '{plan.run_name}' exited with code {returncode}; full log: {plan.log_path}",
+                )
             )
         try:
             result = replace(
@@ -120,7 +124,13 @@ class VLLMBenchmarkWorker:
                 elapsed_seconds=monotonic() - started,
             )
         except ValueError as error:
-            return WorkerResult.failed(classified_failure(plan.log_path, "benchmark_result_invalid", str(error)))
+            return WorkerResult.failed(
+                classified_failure(
+                    plan.log_path,
+                    "benchmark_result_invalid",
+                    f"vLLM benchmark '{plan.run_name}' returned an invalid result: {error}; full log: {plan.log_path}",
+                )
+            )
         progress.complete(process, observed_requests(result))
         failed_path = plan.directory / "failed_requests.json"
         if save_failed_requests(plan.json_path, "vllm", failed_path):
@@ -132,7 +142,11 @@ class VLLMBenchmarkWorker:
         if failure is not None:
             if self._warmup_index is None:
                 remember_result(context, result, observed=True)
-            return WorkerResult.failed(failure)
+            message = f"vLLM benchmark '{plan.run_name}': {failure.message}; full log: {plan.log_path}"
+            if excerpt := log_excerpt(plan.log_path):
+                message += f"\nLatest log output:\n{excerpt}"
+            # Offline reclassification relies on the request-completion failure code.
+            return WorkerResult.failed(replace(failure, message=message))
         if self._warmup_index is None:
             remember_result(context, result)
         return WorkerResult.completed()

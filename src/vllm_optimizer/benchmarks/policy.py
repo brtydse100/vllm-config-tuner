@@ -13,6 +13,7 @@ from vllm_optimizer.benchmarks.configuration import (
 )
 from vllm_optimizer.config.adaptive_repeats import adaptive_repeat_policy
 from vllm_optimizer.config.models import VTuneConfig
+from vllm_optimizer.measurement import validate_drift_threshold
 
 
 @dataclass(frozen=True, slots=True)
@@ -25,6 +26,9 @@ class BenchmarkPolicy:
     repeat_aggregation: str = "mean"
     adaptive_minimum_relative_score: float | None = None
 
+    def __post_init__(self) -> None:
+        validate_drift_threshold(self.drift_threshold)
+
     def to_dict(self) -> dict[str, int | float | str]:
         return {name: value for name, value in asdict(self).items() if value is not None}
 
@@ -33,9 +37,7 @@ class BenchmarkPolicy:
 
 
 def effective_policy(config: VTuneConfig) -> BenchmarkPolicy:
-    drift = config.analysis.get("drift_threshold", 0.05)
-    if isinstance(drift, bool) or not isinstance(drift, int | float) or drift < 0:
-        raise ValueError("analysis.drift_threshold must be a non-negative number")
+    drift = validate_drift_threshold(config.analysis.get("drift_threshold", 0.05))
     adaptive = adaptive_repeat_policy(config)
     return BenchmarkPolicy(
         configured_repeats(config),
