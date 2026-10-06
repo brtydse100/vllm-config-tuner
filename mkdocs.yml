@@ -81,6 +81,7 @@ nav:
       - Contributing: project/contributing.md
       - Release checklist: project/release-checklist.md
   - Release notes:
+      - v0.1.0a20: project/releases/v0.1.0a20.md
       - v0.1.0a19: project/releases/v0.1.0a19.md
       - v0.1.0a18: project/releases/v0.1.0a18.md
       - v0.1.0a17: project/releases/v0.1.0a17.md

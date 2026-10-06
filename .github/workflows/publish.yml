@@ -3,7 +3,7 @@ on:
   release: {types: [published]}
   workflow_dispatch:
     inputs:
-      ref: {description: Immutable tag to publish, required: true, default: v0.1.0a19}
+      ref: {description: Immutable tag to publish, required: true, default: v0.1.0a20}
 permissions: {contents: read}
 
 jobs:

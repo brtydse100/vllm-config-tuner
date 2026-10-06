@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+## v0.1.0a20 — vLLM 0.30 sampling and trustworthy benchmark feedback
+
+_October 6, 2026_
+
+- Updated the runtime extra to vLLM 0.30.x; GuideLLM remains compatible with 0.7.x.
+- Defaulted generation benchmarks to temperature zero and added startup warnings for explicit nonzero sampling.
+- Validated temperature bounds, effective extra-body overrides, and multiple-completion sampling before execution.
+- Normalized prefixed, inline, and dotted benchmark arguments while preserving JSON field names and detecting duplicate aliases.
+- Preserved request-completion failure codes for offline reclassification while adding benchmark log diagnostics.
+- Retained confidence warnings for insufficient repeats and drifting baselines, and rejected non-finite drift thresholds.
+- Matched progress tracking to CLI arguments and vLLM's disabled-by-default readiness check; omitted disabled extra-body flags.
+- Bumped package and runtime versions to `0.1.0a20`. The release attaches the universal wheel, source distribution, and SBOM;
+  install with `pip install "vllm-optimizer==0.1.0a20"` or `pip install "vllm-optimizer[runtime]==0.1.0a20"` on Linux/WSL.
+
 ## v0.1.0a19 — Audited runtime and reporting correctness
 
 _September 22, 2026_
